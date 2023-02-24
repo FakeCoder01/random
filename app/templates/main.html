@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Face Recognition Attendance System</title>
+    <script src="https://cdn.tailwindcss.com/"></script>
+</head>
+<body>
+    <div class="text-3xl font-semibold mb-4 px-4 space-x-8 py-3 bg-blue-100 rounded">
+        <a href="/" class="">Home</a>
+        <a href="/add-user" class="">Add User</a>
+        <a href="/dash" class="">See Attendance</a>
+        <a href="/verify" class="float-right bg-green-400 rounded-lg mt-[-8px] px-3 py-2">Mark Attendance</a>
+    </div>
+    
+    <div class="flex flex-col items-center justify-center h-screen">
+        <p class="text-xs text-blue-500 font-semibold">( Picture will be automatically taken after 2 seconds )</p>
+        <button id="capture-btn" class="px-4 py-2 bg-blue-500 text-white rounded">Capture Image</button>
+    </div>
+
+    <div id="capture-modal" class="fixed inset-0 z-10 hidden">
+        <div class="flex items-center justify-center h-screen">
+            <div class="relative">
+                <video id="video-feed" class="w-full h-auto" autoplay></video>
+                <canvas id="capture-canvas" class="absolute top-0 left-0"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // static/js/app.js
+        const captureBtn = document.getElementById("capture-btn");
+        const captureModal = document.getElementById("capture-modal");
+        const videoFeed = document.getElementById("video-feed");
+        const captureCanvas = document.getElementById("capture-canvas");
+        const ctx = captureCanvas.getContext("2d");
+
+        captureBtn.addEventListener("click", () => {
+            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                videoFeed.srcObject = stream;
+                captureModal.classList.remove("hidden");
+
+                videoFeed.addEventListener("loadedmetadata", () => {
+                    captureCanvas.width = videoFeed.videoWidth;
+                    captureCanvas.height = videoFeed.videoHeight;
+
+                    const captureInterval = setInterval(() => {
+                        ctx.drawImage(videoFeed, 0, 0, captureCanvas.width, captureCanvas.height);
+                        const imageBlob = captureCanvas.toDataURL("image/png");
+                        clearInterval(captureInterval);
+                        stream.getTracks()[0].stop();
+        
+                        fetch("/attendance", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ user_id: 1, image_data: imageBlob }),
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                alert(data.message);
+                            })
+                            .catch((error) => {
+                                console.error(error);
+                                alert("An error occurred while marking attendance");
+                            })
+                            .finally(() => {
+                                captureModal.classList.add("hidden");
+                                videoFeed.srcObject = null;
+                            });
+                    }, 2000);
+                });
+            });
+        });
+        
+
+    </script>    
+</body>
+</html>

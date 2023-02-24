@@ -1,0 +1,7 @@
+uvicorn
+fastapi
+typing
+psycopg2
+face-recognition
+numpy
+Pillow
